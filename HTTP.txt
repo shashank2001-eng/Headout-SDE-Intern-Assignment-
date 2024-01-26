@@ -1,0 +1,70 @@
+#first we will install flask #
+pip install Flask
+
+#Now i will create a new Python file  and import the necessary modules:#
+
+import os
+from flask import Flask, request, Response
+
+#Now i will Initialize the Flask app and set up the /data endpoint:#
+
+app = Flask(__name__)
+
+@app.route('/data', methods=['GET'])
+def data():
+    # Get query parameters
+    n = request.args.get('n')
+    m = request.args.get('m')
+
+    # Set default values
+    if not n:
+        n = '1'
+    if not m:
+        m = '1'
+
+    # Calculate the file path
+    file_path = f"/tmp/data/{n}.txt"
+
+    # Check if the file exists
+    if not os.path.isfile(file_path):
+        return Response("File not found", status=404)
+
+    # Read the file content
+    with open(file_path, 'r') as file:
+        if m == '1':
+            content = file.read()
+        else:
+            content = file.readline(int(m))
+
+    # Return the content
+    return Response(content)
+
+#Now i will create docker file#
+FROM python:3.9-slim-buster
+
+# Create app directory
+WORKDIR /app
+
+# Copy requirements.txt and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the current directory contents into the app directory
+COPY . .
+
+# Expose port 8080 for HTTP
+EXPOSE 8080
+
+# Run the app when the container launches
+CMD ["python", "app.py"]
+
+# Now i will add a requirements.txt file to the project root:
+
+Flask==2.1.1
+
+#Now i will build docker image#
+docker build -t http-server .
+
+#Now run the docker container #
+docker run -d --name http-server -p 8080:8080 -m 1500m -c 2000m http-server
+
